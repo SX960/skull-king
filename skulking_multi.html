@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Skull King — Multiplayer</title>
+  <style>
+    :root {
+      --bg: #1a1a2e; --card: #16213e; --accent: #e94560; --gold: #f0a500;
+      --text: #eaeaea; --muted: #8899aa; --green: #2ecc71; --red: #e74c3c;
+      --blue: #0f3460; --border: #2a4a7f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    #app { max-width: 480px; margin: 0 auto; padding: 14px 14px 50px; }
+
+    h1 { text-align: center; color: var(--gold); font-size: 1.8rem; letter-spacing: 2px; margin-bottom: 4px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.82rem; margin-bottom: 18px; }
+    .panel { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .panel h2 { color: var(--gold); margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Inputs */
+    input[type=text] { background: var(--blue); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 11px 13px; font-size: 1rem; width: 100%; }
+    input:focus { outline: none; border-color: var(--gold); }
+
+    /* Buttons */
+    button { border: none; border-radius: 8px; padding: 11px 18px; font-size: 1rem; cursor: pointer; transition: opacity .1s; }
+    button:active { opacity: .65; }
+    .btn-primary   { background: var(--accent); color: #fff; width: 100%; margin-top: 10px; font-weight: bold; padding: 14px; }
+    .btn-gold      { background: var(--gold); color: #1a1a2e; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-sm        { padding: 7px 12px; font-size: 0.85rem; }
+
+    /* Stepper */
+    .stepper { display: flex; align-items: center; gap: 10px; }
+    .stepper button { background: var(--blue); color: var(--text); padding: 9px 16px; font-size: 1.1rem; }
+    .stepper .val { min-width: 36px; text-align: center; font-size: 1.4rem; font-weight: bold; }
+
+    /* Badges */
+    .badge { display: inline-block; border-radius: 20px; padding: 3px 12px; font-size: 0.78rem; font-weight: bold; }
+    .badge-accent { background: var(--accent); color: #fff; }
+    .badge-gold   { background: var(--gold);   color: #1a1a2e; }
+    .badge-muted  { background: var(--border); color: var(--muted); }
+
+    /* Player list */
+    .player-list { display: flex; flex-direction: column; gap: 7px; }
+    .player-item { display: flex; align-items: center; justify-content: space-between; background: var(--blue); border-radius: 8px; padding: 10px 12px; }
+    .player-item .pname { font-weight: 600; }
+    .player-item .ptags { display: flex; gap: 6px; align-items: center; }
+    .dot-on  { width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+    .dot-off { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+
+    /* Cards */
+    .hand { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .game-card { border-radius: 10px; padding: 10px 8px; min-width: 62px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: transform .12s, border-color .12s; user-select: none; }
+    .game-card:active { transform: scale(.93); }
+    .game-card .c-emoji { font-size: 1.5rem; display: block; }
+    .game-card .c-val   { font-size: 0.85rem; font-weight: bold; margin-top: 3px; }
+    .game-card.playable:hover { transform: translateY(-4px); border-color: var(--gold); }
+    .game-card.illegal  { opacity: .35; cursor: not-allowed; }
+    .game-card.not-turn { cursor: default; }
+
+    /* Card suits */
+    .c-yellow    { background: linear-gradient(135deg,#f0a500,#c88800); color: #1a1a2e; }
+    .c-purple    { background: linear-gradient(135deg,#7b2d8b,#591f6a); color: #fff; }
+    .c-green     { background: linear-gradient(135deg,#2d8b45,#1f6a32); color: #fff; }
+    .c-black     { background: linear-gradient(135deg,#2e2e42,#1a1a2e); color: #bbb; border: 1px solid #3a3a5a !important; }
+    .c-escape    { background: linear-gradient(135deg,#7a8a9a,#596070); color: #fff; }
+    .c-pirate    { background: linear-gradient(135deg,#8b2d2d,#6a1f1f); color: #fff; }
+    .c-mermaid   { background: linear-gradient(135deg,#2d8b8b,#1f6a6a); color: #fff; }
+    .c-skull_king{ background: linear-gradient(135deg,#2a1a3e,#160a28); color: var(--gold); border: 2px solid var(--gold) !important; }
+
+    /* Trick area */
+    .trick-area { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 10px 0; }
+    .trick-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .trick-slot .slot-name { font-size: 0.72rem; color: var(--muted); }
+    .trick-slot .empty-slot { border: 2px dashed var(--border); border-radius: 10px; min-width: 62px; height: 78px; opacity: .4; }
+
+    /* Score table */
+    table { width: 100%; border-collapse: collapse; }
+    th { color: var(--gold); text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); font-size: 0.82rem; text-transform: uppercase; }
+    td { padding: 8px 6px; border-bottom: 1px solid #1e2e4a; font-size: 0.93rem; }
+    tr:last-child td { border-bottom: none; }
+    .pos { color: var(--green); } .neg { color: var(--red); } .rank1 td { color: var(--gold); font-weight: bold; }
+
+    /* Winner */
+    .winner-card { background: linear-gradient(135deg,#0f3460,#16213e); border: 2px solid var(--gold); border-radius: 16px; padding: 26px 20px; text-align: center; margin-bottom: 14px; }
+    .trophy { font-size: 3rem; display: block; margin-bottom: 8px; }
+    .winner-name { color: var(--gold); font-size: 2rem; font-weight: bold; }
+
+    /* Status bar */
+    .status-bar { background: var(--blue); border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; color: var(--muted); text-align: center; margin-bottom: 10px; }
+    .status-bar strong { color: var(--text); }
+
+    /* Error / overlay */
+    .error-msg { background: var(--red); color: #fff; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 0.9rem; }
+    .waiting { color: var(--muted); font-size: 0.88rem; text-align: center; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<div id="app"><p style="text-align:center;margin-top:40px;color:var(--muted)">Connecting…</p></div>
+<script>
+// ─── Client state ─────────────────────────────────────────────────────────────
+let S   = null;   // server state
+let ws  = null;
+let err = null;   // error message
+let myBid = 0;    // local bid stepper value
+
+// Stable UID persisted across refreshes
+if (!localStorage.getItem('sk_uid'))
+  localStorage.setItem('sk_uid', Math.random().toString(36).slice(2) + Date.now().toString(36));
+const MY_UID  = localStorage.getItem('sk_uid');
+const MY_NAME = localStorage.getItem('sk_name') || '';
+
+// ─── WebSocket ────────────────────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}`);
+  ws.onopen = () => {
+    err = null;
+    // Try to rejoin if we have a saved name (reconnect scenario)
+    if (MY_NAME) send({ type:'REJOIN', uid: MY_UID });
+    else render();
+  };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'STATE') { S = msg.state; render(); }
+    if (msg.type === 'ERROR') { err = msg.msg; render(); }
+  };
+  ws.onclose = () => {
+    setTimeout(connect, 2000); // auto-reconnect
+  };
+}
+
+function send(obj) { if (ws?.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const me = () => S?.myIndex >= 0 ? S.players[S.myIndex] : null;
+const isMyTurn = () => S?.phase === 'PLAY' && S.myIndex === S.activePlayerIndex;
+
+function totalScore(p) { return p.scores.reduce((a,b) => a+b, 0); }
+function sign(n) { return n >= 0 ? `+${n}` : String(n); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function isLegalClientSide(card) {
+  const leadSuit = S.currentTrick.leadSuit;
+  if (!leadSuit || card.type !== 'number') return true;
+  if (card.suit === leadSuit) return true;
+  const myHand = me()?.hand || [];
+  return !myHand.some(c => c.type === 'number' && c.suit === leadSuit);
+}
+
+function cardClass(card) {
+  if (card.type === 'number') return `c-${card.suit}`;
+  return `c-${card.type}`;
+}
+
+function renderCard(card, clickable) {
+  const legal    = isMyTurn() && isLegalClientSide(card);
+  const classes  = [
+    'game-card',
+    cardClass(card),
+    clickable && isMyTurn() && legal  ? 'playable' : '',
+    clickable && isMyTurn() && !legal ? 'illegal'  : '',
+    clickable && !isMyTurn()          ? 'not-turn' : '',
+  ].filter(Boolean).join(' ');
+  const onclick  = clickable && isMyTurn() && legal ? `playCard(${card.id})` : '';
+  return `<div class="${classes}" ${onclick ? `onclick="${onclick}"` : ''}>
+    <span class="c-emoji">${card.emoji}</span>
+    <span class="c-val">${card.display}</span>
+  </div>`;
+}
+
+function ranked() {
+  const n = S.players.length;
+  return Array.from({length:n},(_,i)=>i).sort((a,b) => totalScore(S.players[b]) - totalScore(S.players[a]));
+}
+
+// ─── Render dispatcher ────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  if (!S) { app.innerHTML = '<p style="text-align:center;margin-top:40px;color:var(--muted)">Connecting…</p>'; return; }
+
+  const errHtml = err ? `<div class="error-msg">⚠ ${esc(err)}</div>` : '';
+
+  if (S.myIndex < 0 && S.phase === 'LOBBY') { app.innerHTML = errHtml + renderJoin(); return; }
+  if (S.myIndex < 0) { app.innerHTML = '<p style="text-align:center;margin-top:60px;color:var(--muted)">Game already in progress — wait for next game.</p>'; return; }
+
+  const views = { LOBBY:'renderLobby', BID:'renderBid', PLAY:'renderPlay', TRICK_RESULT:'renderTrickResult', SCORE:'renderScore', FINAL:'renderFinal' };
+  app.innerHTML = errHtml + (window[views[S.phase]] ? window[views[S.phase]]() : '');
+}
+
+// ─── JOIN ─────────────────────────────────────────────────────────────────────
+function renderJoin() {
+  const waiting = S.players.map(p => `<div class="player-item"><span class="pname">${esc(p.name)}</span>${p.isHost ? '<span class="badge badge-gold">host</span>':''}</div>`).join('');
+  return `
+    <h1>☠ SKULL KING</h1>
+    <p class="subtitle">Multiplayer — enter your name to join</p>
+    ${S.players.length ? `<div class="panel"><h2>Already joined</h2><div class="player-list">${waiting}</div></div>` : ''}
+    <div class="panel">
+      <input type="text" id="nameInput" placeholder="Your name" maxlength="14" value="${esc(MY_NAME)}" onkeydown="if(event.key==='Enter')joinGame()">
+      <button class="btn-primary" onclick="joinGame()">⚓ Join Game</button>
+    </div>`;
+}
+
+function joinGame() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) return;
+  localStorage.setItem('sk_name', name);
+  send({ type:'JOIN', uid: MY_UID, name });
+}
+
+// ─── LOBBY ────────────────────────────────────────────────────────────────────
+function renderLobby() {
+  const rows = S.players.map(p => `
+    <div class="player-item">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="${p.connected ? 'dot-on' : 'dot-off'}"></div>
+        <span class="pname">${esc(p.name)}</span>
+      </div>
+      <div class="ptags">
+        ${p.isHost ? '<span class="badge badge-gold">host</span>' : ''}
+      </div>
+    </div>`).join('');
+
+  const amHost = me()?.isHost;
+  const canStart = S.players.length >= 2;
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <p class="subtitle">Waiting for players… share this URL with friends</p>
+    <div class="panel">
+      <h2>Players (${S.players.length}/6)</h2>
+      <div class="player-list">${rows}</div>
+    </div>
+    ${amHost ? `
+    <div class="panel">
+      <h2>Rounds</h2>
+      <div class="stepper">
+        <button onclick="setRounds(${S.totalRounds - 1})">−</button>
+        <span class="val">${S.totalRounds}</span>
+        <button onclick="setRounds(${S.totalRounds + 1})">+</button>
+      </div>
+      <p style="color:var(--muted);font-size:0.78rem;margin-top:8px">Standard: 10 rounds</p>
+    </div>
+    <button class="btn-primary ${canStart ? '' : 'btn-secondary'}" onclick="startGame()" ${canStart ? '' : 'disabled'}>
+      ${canStart ? '⚔ Start Game' : 'Need at least 2 players'}
+    </button>` : `<p class="waiting">Waiting for <strong>${esc(S.players[0]?.name)}</strong> to start the game…</p>`}`;
+}
+
+function setRounds(n) { send({ type:'SET_ROUNDS', rounds: n }); }
+function startGame() { send({ type:'START' }); }
+
+// ─── BID ──────────────────────────────────────────────────────────────────────
+function renderBid() {
+  const player = me();
+  const submitted = player.bid !== null;
+  const waitingFor = S.players.filter(p => p.bid === null).map(p => esc(p.name)).join(', ');
+
+  const handHtml = (player.hand || []).map(c => renderCard(c, false)).join('');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <span class="badge badge-accent">Round ${S.round} / ${S.totalRounds}</span>
+      <span style="color:var(--muted);font-size:0.82rem">${S.round} card${S.round>1?'s':''} each</span>
+    </div>
+
+    <div class="panel">
+      <h2>Your hand</h2>
+      <div class="hand">${handHtml}</div>
+    </div>
+
+    ${submitted ? `
+    <div class="panel">
+      <p style="text-align:center">Your bid: <strong style="color:var(--gold);font-size:1.3rem">${typeof player.bid==='boolean'?'✓':player.bid}</strong></p>
+      <p class="waiting">Waiting for: <strong>${waitingFor || '—'}</strong></p>
+    </div>` : `
+    <div class="panel">
+      <h2>🎯 Your bid</h2>
+      <div class="stepper">
+        <button onclick="myBid=Math.max(0,myBid-1);document.getElementById('bidVal').textContent=myBid">−</button>
+        <span class="val" id="bidVal">${myBid}</span>
+        <button onclick="myBid=Math.min(${S.round},myBid+1);document.getElementById('bidVal').textContent=myBid">+</button>
+      </div>
+      <button class="btn-primary btn-gold" onclick="submitBid()" style="margin-top:12px">✓ Lock in bid</button>
+    </div>`}
+
+    <div class="panel">
+      <h2>Bids status</h2>
+      ${S.players.map(p => `
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span>${esc(p.name)}</span>
+          <span>${p.bid === null ? '<span style="color:var(--muted)">thinking…</span>' : '<span style="color:var(--green)">✓ locked</span>'}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function submitBid() { send({ type:'BID', bid: myBid }); myBid = 0; }
+
+// ─── PLAY ─────────────────────────────────────────────────────────────────────
+function renderPlay() {
+  const activeName = esc(S.players[S.activePlayerIndex]?.name);
+  const myTurn     = isMyTurn();
+  const player     = me();
+
+  // Current trick slots
+  const trickSlots = S.players.map((p, i) => {
+    const play = S.currentTrick.plays.find(pl => pl.playerIndex === i);
+    return `<div class="trick-slot">
+      <span class="slot-name">${esc(p.name)}</span>
+      ${play ? renderCard(play.card, false) : '<div class="empty-slot"></div>'}
+    </div>`;
+  }).join('');
+
+  // Scores summary (compact)
+  const scoreRow = S.players.map(p => `<span style="color:var(--muted);font-size:0.78rem">${esc(p.name)}: <strong style="color:var(--text)">${totalScore(p)}</strong></span>`).join(' &nbsp;·&nbsp; ');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+      <span class="badge badge-accent">Round ${S.round}/${S.totalRounds}</span>
+      <span class="badge badge-muted">Trick ${S.trickNumber}</span>
+      ${myTurn ? '<span class="badge badge-gold">YOUR TURN</span>' : `<span style="color:var(--muted);font-size:0.82rem">Waiting for <strong style="color:var(--text)">${activeName}</strong></span>`}
+    </div>
+
+    <div class="panel">
+      <h2>Current trick ${S.currentTrick.leadSuit ? `<span style="font-weight:normal;font-size:0.8rem;color:var(--muted)">lead: ${S.currentTrick.leadSuit}</span>` : ''}</h2>
+      <div class="trick-area">${trickSlots}</div>
+    </div>
+
+    <div class="panel">
+      <h2>Your hand &nbsp;<span style="font-size:0.8rem;color:var(--muted);font-weight:normal">bid: ${player.bid} &nbsp;|&nbsp; tricks: ${player.tricksWon}</span></h2>
+      <div class="hand">${(player.hand||[]).map(c => renderCard(c, true)).join('')}</div>
+      ${!myTurn ? '<p class="waiting" style="margin-top:10px">Wait for your turn to play a card.</p>' : '<p style="color:var(--gold);font-size:0.82rem;text-align:center;margin-top:8px">Tap a card to play it.</p>'}
+    </div>
+
+    <div class="panel" style="font-size:0.82rem">${scoreRow}</div>`;
+}
+
+function playCard(cardId) { send({ type:'PLAY', cardId }); }
+
+// ─── TRICK RESULT ─────────────────────────────────────────────────────────────
+function renderTrickResult() {
+  const r = S.trickResult;
+  if (!r) return renderPlay();
+  const plays = r.plays.map(pl => `
+    <div class="trick-slot">
+      <span class="slot-name">${esc(pl.playerName)}</span>
+      ${renderCard(pl.card, false)}
+    </div>`).join('');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <span class="badge badge-accent" style="display:block;text-align:center;margin-bottom:14px">Round ${S.round}/${S.totalRounds} — Trick ${S.trickNumber}</span>
+    <div class="panel" style="text-align:center">
+      <p style="color:var(--gold);font-size:1.3rem;font-weight:bold;margin-bottom:6px">🏆 ${esc(r.winnerName)} wins!</p>
+      ${r.bonus ? `<p style="color:var(--green)">+${r.bonus} bonus pts</p>` : ''}
+    </div>
+    <div class="panel">
+      <h2>Cards played</h2>
+      <div class="trick-area">${plays}</div>
+    </div>
+    <p class="waiting">Next trick starting in a moment…</p>`;
+}
+
+// ─── SCORE ────────────────────────────────────────────────────────────────────
+function renderScore() {
+  const r = ranked();
+  const rows = S.players.map((p, i) => {
+    const roundPts = p.scores[S.round - 1] ?? 0;
+    return `<tr>
+      <td>${esc(p.name)}</td>
+      <td style="text-align:center">${p.bid} / ${p.tricksWon}</td>
+      <td class="${roundPts>=0?'pos':'neg'}" style="text-align:right">${sign(roundPts)}</td>
+      <td class="${totalScore(p)<0?'neg':''}" style="text-align:right"><strong>${totalScore(p)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  const leaderRows = r.map((pi, rank) => `
+    <tr class="${rank===0?'rank1':''}">
+      <td>${rank===0?'👑':rank+1+'.'} ${esc(S.players[pi].name)}</td>
+      <td style="text-align:right"><strong>${totalScore(S.players[pi])}</strong></td>
+    </tr>`).join('');
+
+  const amHost = me()?.isHost;
+  const isLast = S.round >= S.totalRounds;
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <span class="badge badge-accent" style="display:block;text-align:center;margin-bottom:14px">After Round ${S.round}</span>
+    <div class="panel">
+      <h2>Round ${S.round} results</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:center">Bid/Won</th><th style="text-align:right">Pts</th><th style="text-align:right">Total</th></tr>
+        ${rows}
+      </table>
+    </div>
+    <div class="panel">
+      <h2>🏆 Leaderboard</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:right">Score</th></tr>
+        ${leaderRows}
+      </table>
+    </div>
+    ${amHost
+      ? `<button class="btn-primary ${isLast?'btn-gold':''}" onclick="nextRound()">${isLast ? '🏁 Final Results' : `→ Round ${S.round + 1}`}</button>`
+      : `<p class="waiting">Waiting for <strong>${esc(S.players.find(p=>p.isHost)?.name)}</strong> to continue…</p>`}`;
+}
+
+function nextRound() { send({ type:'NEXT_ROUND' }); }
+
+// ─── FINAL ────────────────────────────────────────────────────────────────────
+function renderFinal() {
+  const r      = ranked();
+  const winner = S.players[r[0]];
+  const allRows = r.map((pi, rank) => {
+    const medal = ['👑','🥈','🥉'][rank] || `${rank+1}.`;
+    return `<tr class="${rank===0?'rank1':''}">
+      <td>${medal} ${esc(S.players[pi].name)}</td>
+      <td style="text-align:right"><strong>${totalScore(S.players[pi])}</strong></td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <div class="winner-card">
+      <span class="trophy">☠</span>
+      <div style="color:var(--muted);font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Skull King is</div>
+      <div class="winner-name">${esc(winner.name)}</div>
+      <div style="color:var(--text);margin-top:6px">${totalScore(winner)} points</div>
+    </div>
+    <div class="panel">
+      <h2>Final Standings</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:right">Score</th></tr>
+        ${allRows}
+      </table>
+    </div>`;
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+connect();
+</script>
+</body>
+</html>
