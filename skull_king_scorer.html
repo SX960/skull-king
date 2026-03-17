@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skull King Scorer</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --card: #16213e;
+      --accent: #e94560;
+      --gold: #f0a500;
+      --text: #eaeaea;
+      --muted: #8899aa;
+      --green: #2ecc71;
+      --red: #e74c3c;
+      --blue: #0f3460;
+      --border: #2a4a7f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    #app { max-width: 500px; margin: 0 auto; padding: 16px 16px 40px; }
+
+    h1 { text-align: center; color: var(--gold); font-size: 2rem; letter-spacing: 2px; margin-bottom: 2px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+
+    .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+    .card h2 { color: var(--gold); margin-bottom: 14px; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    input[type=text], input[type=number] {
+      background: var(--blue);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      width: 100%;
+    }
+    input:focus { outline: none; border-color: var(--gold); }
+
+    button { border: none; border-radius: 8px; padding: 12px 18px; font-size: 1rem; cursor: pointer; transition: opacity 0.1s; }
+    button:active { opacity: 0.65; }
+    .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 10px; font-weight: bold; font-size: 1.05rem; padding: 14px; }
+    .btn-gold    { background: var(--gold); color: #1a1a2e; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-danger  { background: var(--red); color: white; }
+    .btn-sm      { padding: 7px 13px; font-size: 0.85rem; }
+
+    /* ── Setup ── */
+    .player-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .player-row input { flex: 1; }
+
+    /* ── Stepper ── */
+    .stepper { display: flex; align-items: center; gap: 8px; }
+    .stepper button { background: var(--blue); color: var(--text); padding: 8px 15px; font-size: 1.1rem; min-width: 40px; }
+    .stepper .val { min-width: 36px; text-align: center; font-size: 1.3rem; font-weight: bold; }
+
+    /* ── Bid phase ── */
+    .bid-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .bid-row:last-child { border-bottom: none; }
+    .bid-row .pname { font-weight: 600; font-size: 1rem; }
+
+    /* ── Score phase ── */
+    .score-block { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+    .score-block .pname { font-weight: 700; font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .score-block .bid-tag { background: var(--border); border-radius: 20px; padding: 3px 10px; font-size: 0.8rem; font-weight: normal; color: var(--muted); }
+    .tricks-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .tricks-row label { color: var(--muted); font-size: 0.9rem; }
+    .tricks-row .val { font-size: 1.3rem; font-weight: bold; }
+    .match   { color: var(--green); }
+    .nomatch { color: var(--red); }
+    .neutral { color: var(--text); }
+
+    /* ── Bonus section ── */
+    .bonus-box { background: var(--blue); border-radius: 10px; padding: 10px; }
+    .bonus-title { font-size: 0.8rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .bonus-total { color: var(--gold); font-weight: bold; }
+    .bonus-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .bonus-row:last-child { margin-bottom: 0; }
+    .bonus-label { font-size: 0.85rem; color: var(--text); flex: 1; }
+    .bonus-label .pts { color: var(--muted); font-size: 0.75rem; margin-left: 4px; }
+    .bonus-stepper { display: flex; align-items: center; gap: 6px; }
+    .bonus-stepper button { padding: 5px 11px; font-size: 0.95rem; background: var(--border); color: var(--text); min-width: 32px; }
+    .bonus-stepper .val { min-width: 24px; text-align: center; font-weight: bold; }
+    .toggle-btn { padding: 6px 14px; font-size: 0.85rem; }
+    .toggle-btn.on  { background: var(--gold); color: #1a1a2e; font-weight: bold; }
+    .toggle-btn.off { background: var(--border); color: var(--muted); }
+    .custom-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .custom-row label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+    .custom-row input { width: 90px; }
+
+    /* ── Round badge ── */
+    .round-badge { display: inline-block; background: var(--accent); color: white; border-radius: 20px; padding: 4px 14px; font-size: 0.85rem; font-weight: bold; margin-bottom: 14px; }
+
+    /* ── Standings table ── */
+    table { width: 100%; border-collapse: collapse; }
+    th { color: var(--gold); text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 9px 6px; border-bottom: 1px solid #1e2e4a; font-size: 0.95rem; }
+    tr:last-child td { border-bottom: none; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .rank1 td { color: var(--gold); font-weight: bold; }
+
+    /* ── Final ── */
+    .winner-card { background: linear-gradient(135deg, #0f3460 0%, #16213e 100%); border: 2px solid var(--gold); border-radius: 16px; padding: 28px 20px; text-align: center; margin-bottom: 16px; }
+    .trophy { font-size: 3.5rem; display: block; margin-bottom: 8px; }
+    .winner-label { color: var(--muted); font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+    .winner-name  { color: var(--gold); font-size: 2.2rem; font-weight: bold; }
+    .winner-score { color: var(--text); font-size: 1.1rem; margin-top: 6px; }
+
+    /* ── Mode selector ── */
+    .mode-options { display: flex; flex-direction: column; gap: 8px; }
+    .mode-option { display: flex; align-items: flex-start; gap: 12px; background: var(--blue); border: 2px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; transition: border-color 0.15s; }
+    .mode-option.selected { border-color: var(--gold); }
+    .mode-option input[type=radio] { display: none; }
+    .mode-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; margin-top: 2px; background: var(--bg); transition: background 0.15s, border-color 0.15s; }
+    .mode-option.selected .mode-radio { background: var(--gold); border-color: var(--gold); }
+    .mode-info { flex: 1; }
+    .mode-name { font-weight: bold; font-size: 0.95rem; margin-bottom: 3px; }
+    .mode-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .mode-badge { display: inline-block; font-size: 0.72rem; background: var(--border); color: var(--muted); border-radius: 10px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+    .mode-badge.standard { background: #1a3a6e; color: #7ab; }
+    .mode-badge.nopen    { background: #1a3a2a; color: #7c9; }
+    .mode-badge.house    { background: #3a2a1a; color: #ca7; }
+
+    /* ── History toggle ── */
+    .history-label { color: var(--muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; text-align: center; margin-top: 6px; display: block; }
+    .history-table-wrap { overflow-x: auto; margin-top: 8px; }
+    .history-table { font-size: 0.8rem; }
+    .history-table th, .history-table td { padding: 5px 8px; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let S = {
+  phase: 'SETUP',           // SETUP | BID | SCORE | STANDINGS | FINAL
+  players: [{name:''},{name:''},{name:''}],
+  totalRounds: 10,
+  mode: 'standard',         // 'standard' | 'nopen' | 'house'
+  round: 1,
+  scores: [],               // scores[pIdx][roundIdx] = points
+  history: [],              // [{bids, tricks, bonuses, pts}]
+  bids: [],
+  tricks: [],
+  bonuses: [],
+  showHistory: false,
+};
+
+const MODES = {
+  standard: { label: 'Standard',        badge: 'standard' },
+  nopen:    { label: 'No Penalty',       badge: 'nopen'    },
+  house:    { label: 'House Rule',       badge: 'house'    },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const activePlayers = () => S.players.filter(p => p.name.trim());
+const nPlayers      = () => activePlayers().length;
+
+function totalScore(i) {
+  return (S.scores[i] || []).reduce((a, b) => a + b, 0);
+}
+
+function ranked() {
+  return Array.from({length: nPlayers()}, (_, i) => i)
+    .sort((a, b) => totalScore(b) - totalScore(a));
+}
+
+function emptyBonus() {
+  return { skPirates: 0, mermaidSK: false, pirateMermaid: 0, loot14s: 0, custom: 0 };
+}
+
+function bonusTotal(b) {
+  if (!b) return 0;
+  return b.skPirates * 30 + (b.mermaidSK ? 50 : 0) + b.pirateMermaid * 20 + b.loot14s * 20 + (b.custom || 0);
+}
+
+function calcScore(bid, tricks, bonusRaw, round, mode) {
+  mode = mode || S.mode;
+  // Bid 0 logic is the same across all modes
+  if (bid === 0) return tricks === 0 ? 10 * round : -10 * round;
+  // Exact bid
+  if (tricks === bid) {
+    const bidMult = mode === 'house' ? 10 : 20;
+    return bidMult * bid + bonusRaw;
+  }
+  // Wrong bid
+  if (mode === 'nopen') return 0;
+  return -10 * Math.abs(bid - tricks);
+}
+
+function sign(n) { return n >= 0 ? `+${n}` : `${n}`; }
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  const phases = { SETUP: renderSetup, BID: renderBid, SCORE: renderScore, STANDINGS: renderStandings, FINAL: renderFinal };
+  app.innerHTML = (phases[S.phase] || (() => ''))();
+}
+
+// ── SETUP ──
+function renderSetup() {
+  const rows = S.players.map((p, i) => `
+    <div class="player-row">
+      <input type="text" placeholder="Player ${i+1}" value="${esc(p.name)}"
+        oninput="S.players[${i}].name = this.value" maxlength="14">
+      ${S.players.length > 2
+        ? `<button class="btn-danger btn-sm" onclick="removePlayer(${i})">✕</button>`
+        : ''}
+    </div>`).join('');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <p class="subtitle">Physical game score tracker</p>
+
+    <div class="card">
+      <h2>Players</h2>
+      ${rows}
+      ${S.players.length < 8
+        ? `<button class="btn-secondary btn-sm" onclick="addPlayer()" style="margin-top:6px">＋ Add player</button>`
+        : ''}
+    </div>
+
+    <div class="card">
+      <h2>Number of rounds</h2>
+      <div class="stepper">
+        <button onclick="S.totalRounds = Math.max(1, S.totalRounds-1); render()">−</button>
+        <span class="val">${S.totalRounds}</span>
+        <button onclick="S.totalRounds = Math.min(10, S.totalRounds+1); render()">+</button>
+      </div>
+      <p style="color:var(--muted);font-size:0.8rem;margin-top:8px">Standard game: 10 rounds</p>
+    </div>
+
+    <div class="card">
+      <h2>Scoring mode</h2>
+      <div class="mode-options">
+
+        <div class="mode-option ${S.mode==='standard'?'selected':''}" onclick="S.mode='standard'; render()">
+          <div class="mode-radio"></div>
+          <div class="mode-info">
+            <div class="mode-name">Standard <span class="mode-badge standard">official</span></div>
+            <div class="mode-desc">
+              Bid 0 correct → +10×round &nbsp;|&nbsp; Bid 0 wrong → −10×round<br>
+              Exact bid → +20×bid + bonuses<br>
+              Wrong bid → −10×|bid−tricks| (bonuses forfeited)
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-option ${S.mode==='nopen'?'selected':''}" onclick="S.mode='nopen'; render()">
+          <div class="mode-radio"></div>
+          <div class="mode-info">
+            <div class="mode-name">No Penalty <span class="mode-badge nopen">casual</span></div>
+            <div class="mode-desc">
+              Bid 0 correct → +10×round &nbsp;|&nbsp; Bid 0 wrong → −10×round<br>
+              Exact bid → +20×bid + bonuses<br>
+              Wrong bid → 0 pts (no negative score)
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-option ${S.mode==='house'?'selected':''}" onclick="S.mode='house'; render()">
+          <div class="mode-radio"></div>
+          <div class="mode-info">
+            <div class="mode-name">House Rule <span class="mode-badge house">variant</span></div>
+            <div class="mode-desc">
+              Bid 0 correct → +10×round &nbsp;|&nbsp; Bid 0 wrong → −10×round<br>
+              Exact bid → +10×bid + bonuses (half reward)<br>
+              Wrong bid → −10×|bid−tricks|
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startGame()">⚓ Start Game</button>`;
+}
+
+// ── BID ──
+function renderBid() {
+  const rows = activePlayers().map((p, i) => `
+    <div class="bid-row">
+      <span class="pname">${esc(p.name)}</span>
+      <div class="stepper">
+        <button onclick="adj('bids',${i},-1,0,${S.round})">−</button>
+        <span class="val">${S.bids[i]}</span>
+        <button onclick="adj('bids',${i},+1,0,${S.round})">+</button>
+      </div>
+    </div>`).join('');
+
+  const modeBadge = MODES[S.mode];
+  return `
+    <h1>☠ SKULL KING</h1>
+    <span class="round-badge">Round ${S.round} / ${S.totalRounds}</span>
+    <span class="mode-badge ${modeBadge.badge}" style="margin-left:6px">${modeBadge.label}</span>
+    <div class="card">
+      <h2>🎯 Bids &nbsp;<small style="color:var(--muted);font-weight:normal;font-size:0.8rem">${S.round} card${S.round > 1 ? 's' : ''} each</small></h2>
+      ${rows}
+    </div>
+    <button class="btn-primary" onclick="goToScore()">→ Enter Results</button>`;
+}
+
+// ── SCORE ──
+function renderScore() {
+  const blocks = activePlayers().map((p, i) => {
+    const bid    = S.bids[i];
+    const tricks = S.tricks[i];
+    const b      = S.bonuses[i];
+    const bTotal = bonusTotal(b);
+    const tClass = bid === 0
+      ? (tricks === 0 ? 'match' : 'nomatch')
+      : (tricks === bid ? 'match' : 'nomatch');
+    const preview = calcScore(bid, tricks, bTotal, S.round);
+
+    return `
+    <div class="score-block">
+      <div class="pname">
+        ${esc(p.name)}
+        <span class="bid-tag">bid: ${bid}</span>
+      </div>
+
+      <div class="tricks-row">
+        <label>Tricks won:</label>
+        <div class="stepper">
+          <button onclick="adj('tricks',${i},-1,0,${S.round})">−</button>
+          <span class="val ${tClass}">${tricks}</span>
+          <button onclick="adj('tricks',${i},+1,0,${S.round})">+</button>
+        </div>
+        <span style="margin-left:auto;font-size:0.85rem;color:var(--muted)">
+          preview: <strong style="color:${preview>=0?'var(--green)':'var(--red)'}">${sign(preview)}</strong>
+        </span>
+      </div>
+
+      <div class="bonus-box">
+        <div class="bonus-title">
+          <span>⭐ Bonus points</span>
+          ${bTotal > 0 ? `<span class="bonus-total">+${bTotal} pts</span>` : ''}
+        </div>
+
+        <div class="bonus-row">
+          <span class="bonus-label">☠ Skull King captures pirates <span class="pts">(×30)</span></span>
+          <div class="bonus-stepper">
+            <button onclick="adjBonus(${i},'skPirates',-1)">−</button>
+            <span class="val">${b.skPirates}</span>
+            <button onclick="adjBonus(${i},'skPirates',+1)">+</button>
+          </div>
+        </div>
+
+        <div class="bonus-row">
+          <span class="bonus-label">🧜 Mermaid captures Skull King <span class="pts">(+50)</span></span>
+          <button class="toggle-btn ${b.mermaidSK ? 'on' : 'off'}" onclick="toggleBonus(${i},'mermaidSK')">
+            ${b.mermaidSK ? '✓ YES' : 'NO'}
+          </button>
+        </div>
+
+        <div class="bonus-row">
+          <span class="bonus-label">🏴‍☠️ Pirate captures mermaid <span class="pts">(×20)</span></span>
+          <div class="bonus-stepper">
+            <button onclick="adjBonus(${i},'pirateMermaid',-1)">−</button>
+            <span class="val">${b.pirateMermaid}</span>
+            <button onclick="adjBonus(${i},'pirateMermaid',+1)">+</button>
+          </div>
+        </div>
+
+        <div class="bonus-row">
+          <span class="bonus-label">💰 14 (loot) cards captured <span class="pts">(×20)</span></span>
+          <div class="bonus-stepper">
+            <button onclick="adjBonus(${i},'loot14s',-1)">−</button>
+            <span class="val">${b.loot14s}</span>
+            <button onclick="adjBonus(${i},'loot14s',+1)">+</button>
+          </div>
+        </div>
+
+        <div class="custom-row">
+          <label>Custom bonus:</label>
+          <input type="number" value="${b.custom || 0}" style="width:90px"
+            oninput="S.bonuses[${i}].custom = parseInt(this.value)||0">
+          <span style="color:var(--muted);font-size:0.85rem">pts</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const modeBadge2 = MODES[S.mode];
+  return `
+    <h1>☠ SKULL KING</h1>
+    <span class="round-badge">Round ${S.round} / ${S.totalRounds} — Results</span>
+    <span class="mode-badge ${modeBadge2.badge}" style="margin-left:6px">${modeBadge2.label}</span>
+    ${blocks}
+    <button class="btn-primary btn-gold" onclick="submitRound()">✓ Confirm Round ${S.round}</button>`;
+}
+
+// ── STANDINGS ──
+function renderStandings() {
+  const ap  = activePlayers();
+  const rec = S.history[S.round - 1];
+  const r   = ranked();
+  const isLast = S.round >= S.totalRounds;
+
+  const roundRows = ap.map((p, i) => {
+    const pts = S.scores[i][S.round - 1];
+    return `<tr>
+      <td>${esc(p.name)}</td>
+      <td style="text-align:center">${rec.bids[i]} / ${rec.tricks[i]}</td>
+      <td class="${pts >= 0 ? 'pos' : 'neg'}" style="text-align:right">${sign(pts)}</td>
+      <td class="${totalScore(i) < 0 ? 'neg' : ''}" style="text-align:right"><strong>${totalScore(i)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  const leaderRows = r.map((pi, rank) => `
+    <tr class="${rank === 0 ? 'rank1' : ''}">
+      <td>${rank === 0 ? '👑' : rank + 1 + '.'} ${esc(ap[pi].name)}</td>
+      <td style="text-align:right">${totalScore(pi)}</td>
+    </tr>`).join('');
+
+  const historySection = S.showHistory ? renderHistoryTable() : '';
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <span class="round-badge">After round ${S.round}</span>
+
+    <div class="card">
+      <h2>This Round</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:center">Bid/Won</th><th style="text-align:right">Pts</th><th style="text-align:right">Total</th></tr>
+        ${roundRows}
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>🏆 Leaderboard</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:right">Score</th></tr>
+        ${leaderRows}
+      </table>
+      <span class="history-label" onclick="S.showHistory = !S.showHistory; render()">
+        ${S.showHistory ? '▲ Hide history' : '▼ Show round history'}
+      </span>
+      ${historySection}
+    </div>
+
+    ${isLast
+      ? `<button class="btn-primary btn-gold" onclick="endGame()">🏁 Final Results</button>`
+      : `<button class="btn-primary" onclick="nextRound()">→ Round ${S.round + 1}</button>`}`;
+}
+
+function renderHistoryTable() {
+  const ap = activePlayers();
+  const headers = ap.map(p => `<th>${esc(p.name)}</th>`).join('');
+  const rows = S.history.map((rec, ri) => {
+    const cells = ap.map((_, i) => {
+      const pts = S.scores[i][ri];
+      return `<td class="${pts >= 0 ? 'pos' : 'neg'}" style="text-align:right">${sign(pts)}</td>`;
+    }).join('');
+    return `<tr><td style="color:var(--muted)">R${ri+1}</td>${cells}</tr>`;
+  }).join('');
+
+  return `
+    <div class="history-table-wrap">
+      <table class="history-table">
+        <tr><th></th>${headers}</tr>
+        ${rows}
+      </table>
+    </div>`;
+}
+
+// ── FINAL ──
+function renderFinal() {
+  const ap = activePlayers();
+  const r  = ranked();
+  const winner = ap[r[0]];
+
+  const allRows = r.map((pi, rank) => {
+    const medal = ['👑','🥈','🥉'][rank] || `${rank+1}.`;
+    return `<tr class="${rank === 0 ? 'rank1' : ''}">
+      <td>${medal} ${esc(ap[pi].name)}</td>
+      <td style="text-align:right"><strong>${totalScore(pi)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <h1>☠ SKULL KING</h1>
+    <div class="winner-card">
+      <span class="trophy">☠</span>
+      <div class="winner-label">Skull King is</div>
+      <div class="winner-name">${esc(winner.name)}</div>
+      <div class="winner-score">${totalScore(r[0])} points</div>
+    </div>
+    <div class="card">
+      <h2>Final Standings</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:right">Score</th></tr>
+        ${allRows}
+      </table>
+    </div>
+    <button class="btn-primary" onclick="newGame()">⚓ New Game</button>`;
+}
+
+// ─── Actions ──────────────────────────────────────────────────────────────────
+function addPlayer()      { if (S.players.length < 8) { S.players.push({name:''}); render(); } }
+function removePlayer(i)  { if (S.players.length > 2) { S.players.splice(i, 1); render(); } }
+
+function startGame() {
+  S.players = S.players.filter(p => p.name.trim());
+  if (S.players.length < 2) { alert('Need at least 2 players!'); return; }
+  const n = nPlayers();
+  S.round   = 1;
+  S.scores  = Array.from({length: n}, () => []);
+  S.history = [];
+  S.bids    = Array(n).fill(0);
+  S.tricks  = Array(n).fill(0);
+  S.bonuses = Array.from({length: n}, emptyBonus);
+  S.phase   = 'BID';
+  render();
+}
+
+function adj(key, i, delta, min, max) {
+  S[key][i] = Math.min(max, Math.max(min, S[key][i] + delta));
+  render();
+}
+
+function adjBonus(i, key, delta) {
+  S.bonuses[i][key] = Math.max(0, S.bonuses[i][key] + delta);
+  render();
+}
+
+function toggleBonus(i, key) {
+  S.bonuses[i][key] = !S.bonuses[i][key];
+  render();
+}
+
+function goToScore() {
+  const n = nPlayers();
+  S.tricks  = Array(n).fill(0);
+  S.bonuses = Array.from({length: n}, emptyBonus);
+  S.phase   = 'SCORE';
+  render();
+}
+
+function submitRound() {
+  const n = nPlayers();
+  const rec = { bids: [...S.bids], tricks: [...S.tricks], bonuses: S.bonuses.map(b => ({...b})), pts: [] };
+  for (let i = 0; i < n; i++) {
+    const pts = calcScore(S.bids[i], S.tricks[i], bonusTotal(S.bonuses[i]), S.round);
+    S.scores[i].push(pts);
+    rec.pts.push(pts);
+  }
+  S.history.push(rec);
+  S.showHistory = false;
+  S.phase = 'STANDINGS';
+  render();
+}
+
+function nextRound() {
+  S.round++;
+  const n = nPlayers();
+  S.bids    = Array(n).fill(0);
+  S.tricks  = Array(n).fill(0);
+  S.bonuses = Array.from({length: n}, emptyBonus);
+  S.phase   = 'BID';
+  render();
+}
+
+function endGame() { S.phase = 'FINAL'; render(); }
+
+function newGame() {
+  S = { phase:'SETUP', players:[{name:''},{name:''},{name:''}], totalRounds:10, mode:'standard', round:1, scores:[], history:[], bids:[], tricks:[], bonuses:[], showHistory:false };
+  render();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
