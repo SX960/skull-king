@@ -47,3 +47,37 @@ The `PLAY` phase has two overlay sub-states controlled by `STATE.revealHand` (pa
 ### Reference: `skulking_original.html`
 
 The original 806-line monolith kept for reference and as the canonical source for `split_skulking.py`. Do not edit it directly if the split files are the source of truth.
+
+## Git conventions
+
+Commit frequently with focused, single-concern commits so the log stays navigable. Push after each logical unit of work.
+
+**Commit message format:**
+
+```
+<verb> <what changed>
+
+<one or two sentences on why, if not obvious>
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+**Verb vocabulary** (pick the most accurate):
+- `Add` — new file or feature that didn't exist
+- `Update` — change to existing behaviour or content
+- `Fix` — corrects a bug or broken state
+- `Refactor` — restructure without changing behaviour
+- `Remove` — delete code or files
+
+**Scope guidelines:**
+- One commit per file group that changes together (e.g. a logic fix in `js/logic.js` and its test is one commit, not two)
+- Never bundle unrelated files into a single commit
+- If `split_skulking.py` is re-run, commit the regenerated `css/` and `js/` files separately from any manual edits
+
+**Workflow after any set of changes:**
+
+```bash
+git add <specific files>
+git commit -m "..."
+git push
+```
