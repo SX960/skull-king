@@ -4,7 +4,7 @@ const { WebSocketServer } = require('ws');
 const http     = require('http');
 const { networkInterfaces } = require('os');
 
-const PORT = 3000;
+const PORT = 8080;
 const app  = express();
 app.use(express.static(__dirname));
 const server = http.createServer(app);
