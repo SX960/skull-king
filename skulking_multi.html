@@ -52,23 +52,75 @@
 
     /* Cards */
     .hand { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-    .game-card { border-radius: 10px; padding: 10px 8px; min-width: 62px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: transform .12s, border-color .12s; user-select: none; }
+    .game-card {
+      border-radius: 10px;
+      width: 62px; height: 90px;
+      position: relative;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.12);
+      transition: transform .12s, border-color .12s, box-shadow .12s;
+      user-select: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
     .game-card:active { transform: scale(.93); }
-    .game-card .c-emoji { font-size: 1.5rem; display: block; }
-    .game-card .c-val   { font-size: 0.85rem; font-weight: bold; margin-top: 3px; }
-    .game-card.playable:hover { transform: translateY(-4px); border-color: var(--gold); }
+    .game-card.playable:hover { transform: translateY(-6px); border-color: var(--gold); box-shadow: 0 6px 18px rgba(240,165,0,0.45); }
     .game-card.illegal  { opacity: .35; cursor: not-allowed; }
     .game-card.not-turn { cursor: default; }
 
-    /* Card suits */
-    .c-yellow    { background: linear-gradient(135deg,#f0a500,#c88800); color: #1a1a2e; }
-    .c-purple    { background: linear-gradient(135deg,#7b2d8b,#591f6a); color: #fff; }
-    .c-green     { background: linear-gradient(135deg,#2d8b45,#1f6a32); color: #fff; }
-    .c-black     { background: linear-gradient(135deg,#2e2e42,#1a1a2e); color: #bbb; border: 1px solid #3a3a5a !important; }
-    .c-escape    { background: linear-gradient(135deg,#7a8a9a,#596070); color: #fff; }
-    .c-pirate    { background: linear-gradient(135deg,#8b2d2d,#6a1f1f); color: #fff; }
-    .c-mermaid   { background: linear-gradient(135deg,#2d8b8b,#1f6a6a); color: #fff; }
-    .c-skull_king{ background: linear-gradient(135deg,#2a1a3e,#160a28); color: var(--gold); border: 2px solid var(--gold) !important; }
+    /* Card inner layout */
+    .c-corner { position: absolute; font-size: 0.78rem; font-weight: 900; line-height: 1; letter-spacing: -0.5px; }
+    .c-top { top: 5px; left: 6px; }
+    .c-bot { bottom: 5px; right: 6px; transform: rotate(180deg); }
+    .c-suit-icon    { font-size: 1.7rem; display: block; pointer-events: none; }
+    .c-special-icon { font-size: 1.5rem; display: block; margin-bottom: 3px; pointer-events: none; }
+    .c-special-name { font-size: 0.56rem; font-weight: 800; text-align: center; text-transform: uppercase; letter-spacing: 0.6px; padding: 0 3px; line-height: 1.2; pointer-events: none; }
+
+    /* Card suits — improved colors */
+    .c-yellow {
+      background: linear-gradient(155deg, #f7c31a 0%, #e09000 55%, #b86e00 100%);
+      color: #2a1200; border-color: rgba(255,195,0,0.45);
+    }
+    .c-purple {
+      background: linear-gradient(155deg, #7c3aaa 0%, #51227a 55%, #2e0f4a 100%);
+      color: #e5c8ff; border-color: rgba(160,80,230,0.4);
+    }
+    .c-green {
+      background: linear-gradient(155deg, #28b463 0%, #1a7d44 55%, #0d4d28 100%);
+      color: #c8ffe0; border-color: rgba(40,180,100,0.35);
+    }
+    .c-black {
+      background: linear-gradient(155deg, #3c3c5a 0%, #22223a 55%, #111120 100%);
+      color: #c8c8e0; border-color: rgba(120,120,180,0.5) !important;
+    }
+    .c-escape {
+      background: linear-gradient(155deg, #8e9fac 0%, #6b7f8e 55%, #4a5a68 100%);
+      color: #fff; border-color: rgba(200,215,225,0.4);
+    }
+    .c-pirate {
+      background: linear-gradient(155deg, #c0392b 0%, #8e1e14 55%, #5c0d0a 100%);
+      color: #ffdad8; border-color: rgba(220,60,50,0.4);
+    }
+    .c-mermaid {
+      background: linear-gradient(155deg, #17a589 0%, #0e7b65 55%, #074d3e 100%);
+      color: #ccfff4; border-color: rgba(30,200,160,0.4);
+    }
+    .c-skull_king {
+      background: linear-gradient(155deg, #4e235e 0%, #2c1040 55%, #130720 100%);
+      color: var(--gold);
+      border: 2px solid var(--gold) !important;
+      box-shadow: 0 0 12px rgba(240,165,0,0.35);
+    }
+    .c-kraken {
+      background: linear-gradient(155deg, #0a3a4a 0%, #061e28 55%, #020c10 100%);
+      color: #80e8ff; border-color: rgba(0,180,220,0.5);
+      box-shadow: 0 0 10px rgba(0,180,220,0.25);
+    }
+    .c-whale {
+      background: linear-gradient(155deg, #0a1e4a 0%, #060e28 55%, #020510 100%);
+      color: #a0c8ff; border-color: rgba(80,120,255,0.5);
+      box-shadow: 0 0 10px rgba(80,120,255,0.25);
+    }
 
     /* Trick area */
     .trick-area { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 10px 0; }
@@ -152,6 +204,7 @@ function isLegalClientSide(card) {
 
 function cardClass(card) {
   if (card.type === 'number') return `c-${card.suit}`;
+  if (card.type === 'skull_king') return 'c-skull_king';
   return `c-${card.type}`;
 }
 
@@ -164,11 +217,19 @@ function renderCard(card, clickable) {
     clickable && isMyTurn() && !legal ? 'illegal'  : '',
     clickable && !isMyTurn()          ? 'not-turn' : '',
   ].filter(Boolean).join(' ');
-  const onclick  = clickable && isMyTurn() && legal ? `playCard(${card.id})` : '';
-  return `<div class="${classes}" ${onclick ? `onclick="${onclick}"` : ''}>
-    <span class="c-emoji">${card.emoji}</span>
-    <span class="c-val">${card.display}</span>
-  </div>`;
+  const onclick = clickable && isMyTurn() && legal ? `playCard(${card.id})` : '';
+
+  let inner;
+  if (card.type === 'number') {
+    inner = `<div class="c-corner c-top">${card.value}</div>
+      <span class="c-suit-icon">${card.emoji}</span>
+      <div class="c-corner c-bot">${card.value}</div>`;
+  } else {
+    inner = `<span class="c-special-icon">${card.emoji}</span>
+      <span class="c-special-name">${card.display}</span>`;
+  }
+
+  return `<div class="${classes}" ${onclick ? `onclick="${onclick}"` : ''}>${inner}</div>`;
 }
 
 function ranked() {
@@ -313,8 +374,24 @@ function renderPlay() {
     </div>`;
   }).join('');
 
-  // Scores summary (compact)
-  const scoreRow = S.players.map(p => `<span style="color:var(--muted);font-size:0.78rem">${esc(p.name)}: <strong style="color:var(--text)">${totalScore(p)}</strong></span>`).join(' &nbsp;·&nbsp; ');
+  // Per-player bid/tricks table
+  const roundInfoRows = S.players.map((p, i) => {
+    const isActive = i === S.activePlayerIndex;
+    const isMe     = i === S.myIndex;
+    let wonStyle = '';
+    if (p.bid !== null) {
+      if (p.tricksWon === p.bid)      wonStyle = 'color:var(--green);font-weight:bold';
+      else if (p.tricksWon < p.bid)   wonStyle = 'color:var(--gold)';
+      else                             wonStyle = 'color:var(--red)';
+    }
+    const rowBg = isActive ? 'background:rgba(240,165,0,0.1)' : '';
+    return `<tr style="${rowBg}">
+      <td style="font-weight:${isMe?'bold':'normal'}">${isActive ? '▶ ' : ''}${esc(p.name)}</td>
+      <td style="text-align:center">${p.bid}</td>
+      <td style="text-align:center;${wonStyle}">${p.tricksWon}</td>
+      <td style="text-align:right;color:var(--muted);font-size:0.85rem">${totalScore(p)}</td>
+    </tr>`;
+  }).join('');
 
   return `
     <h1>☠ SKULL KING</h1>
@@ -330,12 +407,18 @@ function renderPlay() {
     </div>
 
     <div class="panel">
-      <h2>Your hand &nbsp;<span style="font-size:0.8rem;color:var(--muted);font-weight:normal">bid: ${player.bid} &nbsp;|&nbsp; tricks: ${player.tricksWon}</span></h2>
+      <h2>Your hand</h2>
       <div class="hand">${(player.hand||[]).map(c => renderCard(c, true)).join('')}</div>
       ${!myTurn ? '<p class="waiting" style="margin-top:10px">Wait for your turn to play a card.</p>' : '<p style="color:var(--gold);font-size:0.82rem;text-align:center;margin-top:8px">Tap a card to play it.</p>'}
     </div>
 
-    <div class="panel" style="font-size:0.82rem">${scoreRow}</div>`;
+    <div class="panel">
+      <h2>Bids &amp; Tricks</h2>
+      <table>
+        <tr><th>Player</th><th style="text-align:center">Bid</th><th style="text-align:center">Won</th><th style="text-align:right">Total</th></tr>
+        ${roundInfoRows}
+      </table>
+    </div>`;
 }
 
 function playCard(cardId) { send({ type:'PLAY', cardId }); }
@@ -350,13 +433,28 @@ function renderTrickResult() {
       ${renderCard(pl.card, false)}
     </div>`).join('');
 
+  let resultHtml;
+  if (r.krakenActive) {
+    resultHtml = `
+      <p style="color:#80e8ff;font-size:1.4rem;font-weight:bold;margin-bottom:4px">🐙 Kraken!</p>
+      <p style="color:var(--muted);font-size:0.9rem">Trick cancelled — no one wins it</p>
+      <p style="margin-top:6px;font-size:0.9rem"><strong style="color:var(--text)">${esc(r.winnerName)}</strong> leads the next trick</p>`;
+  } else if (r.whaleActive) {
+    resultHtml = `
+      <p style="color:#a0c8ff;font-size:1.4rem;font-weight:bold;margin-bottom:4px">🐳 Whale!</p>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:6px">Head cards were escapes — highest number wins</p>
+      <p style="color:var(--gold);font-size:1.1rem;font-weight:bold">🏆 ${esc(r.winnerName)} wins!</p>
+      ${r.bonus ? `<p style="color:var(--green)">+${r.bonus} bonus pts</p>` : ''}`;
+  } else {
+    resultHtml = `
+      <p style="color:var(--gold);font-size:1.3rem;font-weight:bold;margin-bottom:6px">🏆 ${esc(r.winnerName)} wins!</p>
+      ${r.bonus ? `<p style="color:var(--green)">+${r.bonus} bonus pts</p>` : ''}`;
+  }
+
   return `
     <h1>☠ SKULL KING</h1>
     <span class="badge badge-accent" style="display:block;text-align:center;margin-bottom:14px">Round ${S.round}/${S.totalRounds} — Trick ${S.trickNumber}</span>
-    <div class="panel" style="text-align:center">
-      <p style="color:var(--gold);font-size:1.3rem;font-weight:bold;margin-bottom:6px">🏆 ${esc(r.winnerName)} wins!</p>
-      ${r.bonus ? `<p style="color:var(--green)">+${r.bonus} bonus pts</p>` : ''}
-    </div>
+    <div class="panel" style="text-align:center">${resultHtml}</div>
     <div class="panel">
       <h2>Cards played</h2>
       <div class="trick-area">${plays}</div>
