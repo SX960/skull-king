@@ -24,6 +24,8 @@ function buildDeck() {
   for (let i = 0; i < 5; i++) cards.push({ id:id++, type:'pirate',     display:'Pirate',     emoji:'☠️' });
   for (let i = 0; i < 2; i++) cards.push({ id:id++, type:'mermaid',    display:'Mermaid',    emoji:'🧜' });
   cards.push(                              { id:id++, type:'skull_king',display:'Skull King', emoji:'💀' });
+  cards.push(                              { id:id++, type:'kraken',    display:'Kraken',     emoji:'🐙' });
+  cards.push(                              { id:id++, type:'whale',     display:'Whale',      emoji:'🐳' });
   return cards;
 }
 
@@ -36,13 +38,37 @@ function shuffle(arr) {
   return a;
 }
 
+// Returns 'kraken', 'whale', or null based on which special is active.
+// If both are present, the one played SECOND wins.
+function getActiveSpecial(plays) {
+  const kraken = plays.find(p => p.card.type === 'kraken');
+  const whale  = plays.find(p => p.card.type === 'whale');
+  if (kraken && whale) return kraken.playOrder > whale.playOrder ? 'kraken' : 'whale';
+  return kraken ? 'kraken' : whale ? 'whale' : null;
+}
+
 function determineTrickWinner(plays, leadSuit) {
-  const nonEscapes = plays.filter(p => p.card.type !== 'escape');
+  const special = getActiveSpecial(plays);
+
+  // Whale: all head cards (pirate, mermaid, skull_king) are escapes → highest number wins
+  if (special === 'whale') {
+    const numbers = plays.filter(p => p.card.type === 'number');
+    if (!numbers.length) return plays.find(p => p.playOrder === 0).playerId;
+    return numbers.reduce((b, p) => p.card.value > b.card.value ? p : b).playerId;
+  }
+
+  // For kraken or normal: determine winner using standard rules
+  // (for kraken, this winner only leads next trick — no trick is awarded)
+  // Exclude kraken/whale cards from the competition
+  const active = plays.filter(p => p.card.type !== 'kraken' && p.card.type !== 'whale');
+  if (!active.length) return plays.find(p => p.playOrder === 0).playerId;
+
+  const nonEscapes = active.filter(p => p.card.type !== 'escape');
   if (!nonEscapes.length) return plays.find(p => p.playOrder === 0).playerId;
 
-  const sk       = plays.find(p => p.card.type === 'skull_king');
-  const mermaids = plays.filter(p => p.card.type === 'mermaid').sort((a,b) => a.playOrder - b.playOrder);
-  const pirates  = plays.filter(p => p.card.type === 'pirate' ).sort((a,b) => a.playOrder - b.playOrder);
+  const sk       = active.find(p => p.card.type === 'skull_king');
+  const mermaids = active.filter(p => p.card.type === 'mermaid').sort((a,b) => a.playOrder - b.playOrder);
+  const pirates  = active.filter(p => p.card.type === 'pirate' ).sort((a,b) => a.playOrder - b.playOrder);
 
   if (sk) {
     if (pirates.length && mermaids.length) return pirates[0].playerId;
@@ -52,14 +78,14 @@ function determineTrickWinner(plays, leadSuit) {
   if (pirates.length)  return pirates[0].playerId;
   if (mermaids.length) return mermaids[0].playerId;
 
-  const blacks = plays.filter(p => p.card.type === 'number' && p.card.suit === 'black');
+  const blacks = active.filter(p => p.card.type === 'number' && p.card.suit === 'black');
   if (blacks.length) return blacks.reduce((b,p) => p.card.value > b.card.value ? p : b).playerId;
 
   if (leadSuit) {
-    const leads = plays.filter(p => p.card.type === 'number' && p.card.suit === leadSuit);
+    const leads = active.filter(p => p.card.type === 'number' && p.card.suit === leadSuit);
     if (leads.length) return leads.reduce((b,p) => p.card.value > b.card.value ? p : b).playerId;
   }
-  return plays.find(p => p.playOrder === 0).playerId;
+  return active.find(p => p.playOrder === 0)?.playerId || plays.find(p => p.playOrder === 0).playerId;
 }
 
 function accumulateBonuses(plays, winnerId) {
@@ -244,13 +270,19 @@ function onPlay(ws, msg) {
 function resolveTrick() {
   const plays    = G.currentTrick.plays;
   const leadSuit = G.currentTrick.leadSuit;
+  const special  = getActiveSpecial(plays);
   const winnerId = determineTrickWinner(plays, leadSuit);
-  const bonus    = accumulateBonuses(plays, winnerId);
   const winnerPi = G.players.findIndex(p => p.uid === winnerId);
 
-  G.players[winnerPi].tricksWon++;
-  G.players[winnerPi].bonusPoints += bonus;
-  G.trickResult = { winnerName: G.players[winnerPi].name, bonus, plays: [...plays] };
+  // Kraken: nobody gets the trick — winner only leads next
+  if (special !== 'kraken') {
+    const bonus = accumulateBonuses(plays, winnerId);
+    G.players[winnerPi].tricksWon++;
+    G.players[winnerPi].bonusPoints += bonus;
+    G.trickResult = { winnerName: G.players[winnerPi].name, bonus, plays: [...plays], whaleActive: special === 'whale' };
+  } else {
+    G.trickResult = { winnerName: G.players[winnerPi].name, bonus: 0, plays: [...plays], krakenActive: true };
+  }
   G.phase = 'TRICK_RESULT';
   broadcast();
 
